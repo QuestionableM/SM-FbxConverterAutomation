@@ -1,6 +1,6 @@
 # SM-FbxConverterAutomation
 
-Allows you to prepare the FBX animation for use in SM with a single click
+Allows you to prepare the FBX animation for use in Scrap Mechanic with a single click
 
 # Requirements
 ### You must have the [FBX Converter 2013](https://aps.autodesk.com/developer/overview/fbx-converter-archives) installed on your computer
