@@ -1,2 +1,4 @@
 <FbxConverterAutomation
-    fbx_converter_path = "path_to_fbx2013_bin_exe">
+    fbx_converter_path = "path_to_fbx2013_bin_exe"
+    fbx_dir = "optional_fbx_directory_path"
+    dae_dir = "optional_dae_directory_path">

@@ -9,9 +9,12 @@
 #define CON_LOG_PREFIX "[SMDAE] "
 #include "Console.hpp"
 
+constexpr const char* g_daeDirKey = "dae_dir";
+constexpr const char* g_fbxDirKey = "fbx_dir";
+
 static std::string g_fbxConverterPath;
-const std::string g_fbxDirectory = "./fbx";
-const std::string g_daeDirectory = "./dae";
+static std::string g_fbxDirectory;
+static std::string g_daeDirectory;
 
 enum ConvertProgress : std::uint8_t
 {
@@ -64,6 +67,14 @@ inline static bool createDirectorySafe(const std::string& path)
 	const bool v_success = std::filesystem::create_directory(path, v_ec);
 	
 	return !v_ec && v_success;
+}
+
+inline static bool isDirectorySafe(const std::string& path)
+{
+	std::error_code v_ec;
+	const bool v_is_directory = std::filesystem::is_directory(path);
+
+	return !v_ec && v_is_directory;
 }
 
 inline static bool isRegularFileSafe(const std::string& path)
@@ -225,6 +236,12 @@ inline static std::vector<std::string> getFbxFiles()
 	return v_output;
 }
 
+inline static bool loadPathStr(pugi::xml_node config, const char* attr, const char* default_val, std::string* str_ref)
+{
+	*str_ref = config.attribute(attr).as_string(default_val);
+	return true;
+}
+
 inline static bool readConfig()
 {
 	pugi::xml_document v_doc;
@@ -237,6 +254,12 @@ inline static bool readConfig()
 
 	pugi::xml_node v_config_node = v_doc.root().child("FbxConverterAutomation");
 	g_fbxConverterPath = v_config_node.attribute("fbx_converter_path").as_string();
+
+	if (!loadPathStr(v_config_node, g_fbxDirKey, "./fbx", &g_fbxDirectory))
+		return false;
+
+	if (!loadPathStr(v_config_node, g_daeDirKey, "./dae", &g_daeDirectory))
+		return false;
 
 	if (g_fbxConverterPath.empty())
 	{
@@ -260,6 +283,26 @@ inline static bool readConfig()
 	return true;
 }
 
+inline static bool checkDirSafe(const char* key, const std::string& str)
+{
+	if (!isDirectorySafe(str))
+	{
+		DebugErrorL("The specified ", key, " does not lead to a directory! (Path: ", str, ")");
+		return false;
+	}
+
+	return true;
+}
+
+inline static bool checkMainDirectories()
+{
+	createDirectorySafe(g_fbxDirectory);
+	createDirectorySafe(g_daeDirectory);
+
+	return checkDirSafe(g_fbxDirKey, g_fbxDirectory)
+		&& checkDirSafe(g_daeDirKey, g_daeDirectory);
+}
+
 int main()
 {
 	namespace chr = std::chrono;
@@ -267,14 +310,11 @@ int main()
 	
 	AttachToDebugConsole();
 
-	if (!readConfig())
+	if (!readConfig() || !checkMainDirectories())
 	{
 		focusAndHoldUntilInput();
 		return -1;
 	}
-
-	createDirectorySafe(g_fbxDirectory);
-	createDirectorySafe(g_daeDirectory);
 
 	const std::vector<std::string> v_fbx_paths = getFbxFiles();
 	std::string v_tmp_dae_path;
